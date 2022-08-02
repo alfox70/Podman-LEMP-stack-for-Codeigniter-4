@@ -1,0 +1,58 @@
+version: "3"
+services:
+    web:
+        image: docker.io/library/nginx:1.21.6-alpine
+        rename: '${COMPOSE_PROJECT_NAME}-web'
+        privileged: true
+        ports:
+            - 8000:80
+        volumes:
+            - ./config/nginx/conf.d:/etc/nginx/conf.d
+            - ./app:/app
+        depends_on:
+            - php
+            - phpmyadmin
+    php:
+        build:
+            context: .
+            dockerfile: ./config/php/PHP.Dockerfile
+        rename: '${COMPOSE_PROJECT_NAME}-php' 
+        privileged: true
+        volumes:
+            - ./app:/app
+            - ./config/php/php.ini:/usr/local/etc/php/php.ini
+        depends_on:
+          - db
+    db:
+        image: docker.io/yobasystems/alpine-mariadb:10.6.4
+        rename: '${COMPOSE_PROJECT_NAME}-db'
+        privileged: true
+        restart: 'always'
+        ports:
+          - 3306:3306
+        volumes:
+            - ./dbdata:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: "root"
+            MYSQL_DATABASE: "demo"
+            MYSQL_USER: "user"
+            MYSQL_PASSWORD: "user"
+        
+        
+    phpmyadmin:
+        image: docker.io/mhzawadi/phpmyadmin:latest
+        rename: '${COMPOSE_PROJECT_NAME}-pma'
+        privileged: true
+        links:
+          - db
+        environment:
+          PMA_HOST: "db"
+          PMA_PORT: "3306"
+          PMA_USER: "root"
+          PMA_PASSWORD: "root"
+          MYSQL_ROOT_PASSWORD: "root"
+          MYSQL_USER: "user"
+          MYSQL_PASSWORD: "user"
+          
+        ports:
+          - 8080:80
